@@ -1,0 +1,85 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage[pdftex]{graphicx}
+
+\usepackage[cmex10]{amsmath}
+\interdisplaylinepenalty=2500
+
+\usepackage{array}
+\usepackage{fixltx2e}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{colortbl}
+\usepackage{listings, multicol}
+\usepackage{multicol}
+\usepackage{cite}
+\usepackage{verbatim}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{codeblue}{rgb}{0,0,0.98}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle= \normalsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                
+    numbersep=5pt,  
+    numbers=none,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=3
+}
+
+\lstset{style=mystyle}
+
+\begin{comment}
+\lstset{basicstyle=\ttfamily,columns=fullflexible}
+\end{comment}
+\begin{document}
+
+\title{Speeding Up Sequence Alignment Algorithms via Parallel Programming: A Comparison Between Different Synchronization Approaches}
+
+\author{
+\IEEEauthorblockN{Olger~Calderón~Achío\IEEEauthorrefmark{1}, Wilberth~Castro~Fuentes\IEEEauthorrefmark{1}, Irene~Gamboa~Padilla\IEEEauthorrefmark{1},\\ Andrés~Morales~Esquivel\IEEEauthorrefmark{1}, Diego~Pérez~Arroyo\IEEEauthorrefmark{1}} 
+\IEEEauthorblockA{\\\IEEEauthorrefmark{1}\IEEEmembership{Instituto Tecnológico de Costa Rica}}
+}
+
+\markboth{Speeding Up Sequence Alignment Algorithms via Parallel Programming, April~2016}%
+{Speeding Up Sequence Alignment Algorithms via Parallel Programming, April~2016}
+
+\maketitle
+
+\begin{abstract}
+	There are several problem contexts (scientific, financial) where data intensive applications might highly benefit from high performance computing techniques. Probably the most common mean is to exploit the parallelism intrinsic to the problem using the available parallel hardware. Modern SOs provide the means to exploit this approach from a programming perspective (via multi-threading services). We propose researching about at least 2 different parallelization strategies for dynamic programming algorithms and then compare their speedups and implementation efforts. We will implement and compare, specifically, parallel versions of some sequence alignment algorithms (Needleman-Wunsch, Smith-Waterman), which are definitely not embarrassingly parallel.
+\end{abstract}
+
+\begin{IEEEkeywords}
+	Parallel Programming, Synchronization Techniques, Operating Systems, Dynamic Programming, High Performance Computing, Sequence Alignment.
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\cite{edmiston1988parallel} \cite{galper1990parallel} \cite{hughey1996parallel} \cite{wozniak1997using} \cite{rognes2000six} \cite{martins2001multithreaded} \cite{anvik2001generating} \cite{aluru2003parallel}\cite{stivala2010lock} \cite{farrar2007striped} \cite{schatz2007high} \cite{manavski2008cuda} \cite{vouzis2011gpu} \cite{rognes2011faster} \cite{benkrid2012high} \cite{liu2013cudasw++} \cite{li2014pairwise} \cite{wilton2014faster} \cite{maleki2014parallelizing}
+
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+
+\end{document}
