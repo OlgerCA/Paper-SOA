@@ -66,20 +66,146 @@
 	There are several problem contexts (scientific, financial) where data intensive applications might highly benefit from high performance computing techniques. Probably the most common mean is to exploit the parallelism intrinsic to the problem using the available parallel hardware. Modern SOs provide the means to exploit this approach from a programming perspective (via multi-threading services). We propose researching about at least two different parallelization strategies for dynamic programming algorithms and then compare their speedups and implementation efforts. We will implement and compare, specifically, parallel versions of some sequence alignment algorithms (Needleman-Wunsch, Smith-Waterman), which are definitely not embarrassingly parallel.
 \end{abstract}
 
+% We should adjust the abstract after we have finished writing the paper.
+
 \begin{IEEEkeywords}
 	Parallel Programming, Synchronization Techniques, Operating Systems, Dynamic Programming, High Performance Computing, Sequence Alignment.
 \end{IEEEkeywords}
 
 \section{Introduction}
 
-\cite{edmiston1988parallel} \cite{galper1990parallel} \cite{hughey1996parallel} \cite{wozniak1997using} \cite{rognes2000six} \cite{martins2001multithreaded} \cite{anvik2001generating} \cite{aluru2003parallel}\cite{stivala2010lock} \cite{farrar2007striped} \cite{schatz2007high} \cite{manavski2008cuda} \cite{vouzis2011gpu} \cite{rognes2011faster} \cite{benkrid2012high} \cite{liu2013cudasw++} \cite{li2014pairwise} \cite{wilton2014faster} \cite{maleki2014parallelizing}
+% Irene y Andrés.
+
+% Talk about the problem. Why is so important?
+% - Dynamic programming is not always so easy to parallelize. Is there really some benefit in trying that?
+% - Parallel hardware should be exploited.
+% - Biological data is requiring more powerful processing. Other solutions like BLAST are not optimal.
+% - Cite references.
+
+% Talk about our solution. I think we should hypothesize that there is a real benefit of parallelizing alignment algorithms, and then, that the Chunk-based Solution is better (achieves a higher speedup) than other solutions (like Spin-lock or Yield based solutions). Our contributions are:
+        % - A kind of generic Parallel Dynamic Programming Architecture.
+        % - An algorithm that achieves significant speedup.
+        % - A experimental design for comparing this solution with others (implementations are pending).
+% Talk about preliminary results.
+
+
+% Outline the paper and its sections.
+
+\section{Background}
+
+% Wilberth
+
+% High Performance Computing / Parallel Hardware importance for scientific  applications.
+
+% Dynamic Programming properties (optimal results).
+
+% Dynamic Programming Parallelization Efforts and associated challenges (mention Bellman Equation please).
+
+% Needleman-Wunsch, Smith-Waterman algorithms.
+    % Description of the algorithms. Remember we are using affine-gap versions.
+    % Relevance.
+    % Why do we need faster implementations?
+% Cite references. We might need to add references for the sequence alignment algorithms themselves.
+
+\section{Parallel Dynamic Programming Architecture}
+
+An important aspect that we consider when implementing more than one dynamic programming parallelization approach is to be able to separate or decompose the solutions in different layers of processing. In particular, we have structured our solutions in 3 layers on processing:
+
+\begin{enumerate}
+    \item Cell filling logic: is the one at the lowest level and the one used to calculate each individual cell's value. In other words, the implementation of Bellman equation. When we execute the logic to fill a cell, it is a assumed that all required dependencies of this cell have been previously calculated.
+    \item Filling patterns: dynamic programming algorithms are usually characterized by filling the matrix(es) using different patterns or shapes. It is common to say: we are filling this matrix by subsquares o by diagonals. A filling pattern algorithm fills a group of cells following a certain order. Such an order should be compatible with each cell individual dependencies.
+    \item Matrix filling: this layer constitutes the high-level approach for filling the whole matrix. It is at this level where we decide how exactly the parallelization effort is implemented. We could decide, for example, to fill certain different shapes in parallel. Being $N \times N$ the dimensions of the dynamic programming matrix, at the simplest case, a matrix filling algorithm could be to fill the subsquare which has its upper-left corner at cell $(0,0)$ and has height and width equal to $N$. In this case, it turns out that the given subsquare is equal to the whole matrix, but it doesn't have to be the case. More elaborate matrix filling algorithms should make use of the filling primitives in the layer below. 
+\end{enumerate}
+
+The previously described software architecture facilitates the development of different versions of the same algorithm. We are decoupling the logic needed to satisfy Bellman equation at each individual cell (the lowest most layer), from the patterns for filling subparts of the matrix(the layer in the middle), from the high-level logic used to fill the whole matrix (which could involve parallel programming logic if desired). Changing the parallel programming strategy should not affect the logic in other layers, as they act as primitives for the layer above them.
+
+It should be also noted that the idea behind this layering, is in fact to expose parallelism in dynamic programming applications. By having different groups of cells that could be filled independently, and by having filling pattern primitives that could be applied to each one of them, we are greatly simplifying the writing process of dynamic programming parallel programs.
+
+We will describe how each of these layers plays a role in our implementations. A prototype that makes use of these concepts can be found at \url{https://github.com/diepe28/Proyecto2-BMC-Alineamientos}.
+
+\subsection{Cell filling logic layer}
+
+We have devised a simple {\tt fill} primitive for our sequence alignment algorithms. This routine will apply Bellman equation to one cell and store the calculated results in it. It should be noted, that in our implementation we are using a traditional C language matrix for storing the values. Given that we are using the affine-function versions of the sequence alignment algorithms for penalizing gaps, we will store three values on each cell instead of one. Other authors refer to three distinct matrices, but we will refer to just one for the sake of simpleness. To fill one cell in our matrix will be equivalent to filling each one of the three cells of the three mentioned matrices at the same positions.
+
+Our {\tt fill} primitive will differentiate between two cases: filling a corner cell and filling an interior cell. For our purposes, an interior cell is one that needs all dependencies to satisfy its Bellman equation (one cell to the north, one to north-west and the last one to the west). A corner cell is any cell which filling logic is different than interior cells just because at least one of the dependencies is non existent (cells at row or column $0$ in our case). The  {\tt fill} primitive looks like:
+
+
+\lstset{language=C}
+\begin{lstlisting}[linewidth=\columnwidth,breaklines=true]
+void fill(Cell*** matrix, ScoringOptions* options, char* seq1, char* seq2, int x, int y) 
+{
+	if (x == 0 || y == 0)
+		fill_corner (matrix, options, x, y;
+	else
+		fill_interior (matrix, options, x, y, seq1, seq2);
+}
+\end{lstlisting}
+
+Here {\tt x} and {\tt y} are the row and column (respectively) of the cell that is being filled. Each one of the functions {\tt fill\_corner} and {\tt fill\_interior}, have the appropriate logic to satisfy Bellman equation. 
+
+\subsection{Filling patterns layer}
+
+As mentioned previously, there could be potentially different types of filling patterns that we would like to support. For our purposes it suffices to have a pattern for filling a submatrix. Later on, we will use the terms submatrix and chunk interchangeably.  
+
+\subsection{Matrix filling layer}
+
+\section{Chunk-based Solution}
+
+% Olger
+
+\subsection{Workload Distribution}
+
+\subsection{Semaphore-Based Synchronization}
+
+\subsection{Preliminary Results}
+
+% Diego.
+
+\section{Other Proposed Solutions}
+
+% Diego.
+
+% Don't know if we are gonna have implementations on time.
+
+\section{Proposed Experiments}
+
+% Irene y Andrés.
+
+% Define concepts: statistical unit, response variable, factors,etc.
+% From where data was taken from?
+% Factors might be: algorithm and sequence size. We could hypothesize that a spin-lock based solution could achieve a higher speedup if sequences sizes are relatively small.
+% Which experimental design are we going to use?
+% How we plan to analyse the results (from a statistical point of view).
+
+\section{Related Work}
+
+% Irene y Andrés.
+
+% Cite related work. There has been other attempts to parallelize the same algorithms. For example: via GPU. Explain  why our approach is different from the rest (GPU programming might be harder for example).
+
+\section{Future Work}
+
+% Irene y Andrés (or other person if he finishes early).
+
+% Probably: implement the other approaches, run the experiments and perform the statistical analysis.
+% Any other idea.
+
+\section{Conclusions}
+
+% Olger y Diego.
+
+% Preliminary results support our hypothesis that parallelizing dynamic programming algorithms might be worthy and could be a preferably approach to running heuristic algorithms (like BLAST).
+
+% Synchronization strategies should be chosen carefully? When are semaphores better than spin locks?
+
+% Any other significant conclusion.
 
 \ifCLASSOPTIONcaptionsoff
   \newpage
 \fi
 
-\bibliographystyle{IEEEtran}
-\bibliography{refs}
+%\bibliographystyle{IEEEtran}
+%\bibliography{refs}
 
 
 \end{document}
