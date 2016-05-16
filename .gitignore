@@ -2,4 +2,5 @@
 !.gitignore
 !paper.tex
 !refs.bib
-!Images/
+!Images/*.png
+!Images/*.PNG
