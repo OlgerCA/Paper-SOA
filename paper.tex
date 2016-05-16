@@ -417,9 +417,9 @@ There is also other researches that can be performed about parallelizing other p
 
 \section{Conclusions}
 
-Our work indicates that is possible to obtain speedup on dynamic programming algorithms via parallel programming, even where there are clear dependencies among tasks. It is necessary to design an algorithm which tries to distribute work equally among threads and that has as little synchronization overhead as possible.
+Our work indicates that is possible to obtain speedup on dynamic programming algorithms via parallel programming, even when there are clear dependencies among tasks. It is necessary to design an algorithm which tries to distribute work equally among threads and that has as little synchronization overhead as possible.
 
-Preliminary results seem to suggest that 
+Preliminary results seem to suggest that tuning of the algorithm is required to achieve higher speedups. We think that assigning more strips to the threads (not just two) might improve the speedup measures, as that would reduce the threads idle times. 
 
 % Olger y Diego.
 
