@@ -1,6 +1,7 @@
 *
 !.gitignore
 !paper.tex
+!paper.pdf
 !refs.bib
 !Images/*.png
 !Images/*.PNG
