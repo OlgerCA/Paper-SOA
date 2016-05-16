@@ -52,23 +52,21 @@
 \end{comment}
 \begin{document}
 
-\title{Speeding Up Sequence Alignment Algorithms via Parallel Programming: A Comparison Between Different Synchronization Approaches}
+\title{Speeding Up Sequence Alignment Algorithms via Parallel Programming: Dividing Work into Chunks}
 
 \author{
 \IEEEauthorblockN{Olger~Calderón~Achío\IEEEauthorrefmark{1}, Wilberth~Castro~Fuentes\IEEEauthorrefmark{1}, Irene~Gamboa~Padilla\IEEEauthorrefmark{1},\\ Andrés~Morales~Esquivel\IEEEauthorrefmark{1}, Diego~Pérez~Arroyo\IEEEauthorrefmark{1}} 
 \IEEEauthorblockA{\\\IEEEauthorrefmark{1}\IEEEmembership{Instituto Tecnológico de Costa Rica}}
 }
 
-\markboth{Speeding Up Sequence Alignment Algorithms via Parallel Programming, April~2016}%
-{Speeding Up Sequence Alignment Algorithms via Parallel Programming, April~2016}
+\markboth{Speeding Up Sequence Alignment Algorithms via Parallel Programming, May~2016}%
+{Speeding Up Sequence Alignment Algorithms via Parallel Programming, May~2016}
 
 \maketitle
 
 \begin{abstract}
-	There are several problem contexts (scientific, financial) where data intensive applications might highly benefit from high performance computing techniques. Probably the most common mean is to exploit the parallelism intrinsic to the problem using the available parallel hardware. Modern SOs provide the means to exploit this approach from a programming perspective (via multi-threading services). We propose researching about at least two different parallelization strategies for dynamic programming algorithms and then compare their speedups and implementation efforts. We will implement and compare, specifically, parallel versions of some sequence alignment algorithms (Needleman-Wunsch, Smith-Waterman), which are definitely not embarrassingly parallel.
+	There are several problem contexts (scientific, financial) where data intensive applications might highly benefit from high performance computing techniques. Probably the most common mean is to exploit the parallelism intrinsic to the problem using the available parallel hardware. Modern SOs provide the means to exploit this approach from a programming perspective (via multi-threading services). We characterize a type of dynamic programming algorithms as chunk-based and introduce a solution for parallelizing them. This solution has the property of equally distributing work among different threads, even if they remain idle at certain times. We plan to implement and compare, specifically, parallel versions of some sequence alignment algorithms (Needleman-Wunsch, Smith-Waterman), which are definitely not embarrassingly parallel and might benefit from our workload distribution strategy. Preliminary results suggest that our algorithm and modeling works, and with more tuning to our solution even better speedups could be obtained.
 \end{abstract}
-
-% We should adjust the abstract after we have finished writing the paper.
 
 \begin{IEEEkeywords}
 	Parallel Programming, Synchronization Techniques, Operating Systems, Dynamic Programming, High Performance Computing, Sequence Alignment.
@@ -78,18 +76,19 @@
 
 Sequence Alignment algorithms helps us compare different strands of DNA, RNA or proteins, different parallelization methodologies has been researched to increase the speedup of the different algorithms, this is because the strands of DNA, RNA and proteins become bigger and bigger with more biology research going on.
 
-With much more data to analyze the algorithms used need to handle not only a bigger set of data but also return results in a reasonable time. That's why we propose a parallelization methodology that exploits hardware resources (in this case multi-threaded processors) with the help of Operating Systems that provide access to this resources. We use the Needleman-Wunsch and the Smith-Watermam dynamic programming algorithms and propose a ``Chunk-based'' approach to get a speedup in the results of the algorithms with different \cite{galper1990parallel}.
+With much more data to analyze the algorithms used need to handle not only a bigger set of data but also return results in a reasonable time. That's why we propose a parallelization methodology that exploits hardware resources (in this case multi-threaded processors) with the help of Operating Systems that provide access to these resources. We use the Needleman-Wunsch and the Smith-Watermam dynamic programming algorithms and propose a ``Chunk-based'' workload division strategy for speeding up those algorithms.
 
-Dynamic Programming algorithms are hard to parallelize due to the fact that they need previous data to continue computing the results. So it can't be trivially partitioned for different threads to do work. There have been different approaches to parallelize the Needleman-Wunsch and Smith-Waterman algorithms \cite{liu2013cudasw++, rognes2011faster, manavski2008cuda, tahirParallelNW}.
+%of the algorithms with different \cite{galper1990parallel}.
+
+Dynamic Programming algorithms are hard to parallelize due to the fact that they need previous data to continue computing the results. So it can't be trivially partitioned for different threads for executing work in parallel. There have been different approaches to parallelize the Needleman-Wunsch and Smith-Waterman algorithms \cite{liu2013cudasw++, rognes2011faster, manavski2008cuda, tahirParallelNW}.
 
 In our approach we give each thread a chunk of work to do, and they are blocked with semaphores until there is enough data for they to work with. We propose an experiment to provide enough information to verify our hypothesis that this approach can achieve a speedup that is considerably good enough to continue researching and comparing the results with other approaches. 
 
-This paper is organized in the following way: The section 2 explain the background about parallel hardware and different algorithms. The parallel dynamic programming architecture it's found in the section 3. Section 4 talks on Chunk-Based Solution. Other proposed solutions are inside the section 5. The proposed experiments it can see in the section 6. The section 7 and 8 have the Related Work and Future Work respectively. And finally we will write our conclusions in the last section.
-% Outline the paper and its sections.
+This paper is organized in the following way: The section 2 explains the background about parallel hardware and different algorithms. The parallel dynamic programming architecture it's found in the section 3. Section 4 talks about our Chunk-Based Solution. The proposed experiments can be seen in the section 5. The section 6 and 7 have the Related Work and Future Work respectively. And finally we will write our conclusions in the last section.
 
 \section{Background}
 
-Since the molecular biology begins, has been necessary to develop sequence alignment methods, the development of these methods has taken many years and it's not as simple as matching the length of the sequences and then make an exhaustive comparison. Just find a way to match is a hard work, there are many possibilities, but the most convenient is needed. For this, an additive model was developed, a points-accumulation model, valuing the matches of symbols, the model has been commonly called ``+1-1-2''.
+Since the molecular biology began, it has been necessary to develop sequence alignment methods, the development of these methods has taken many years and it's not as simple as matching the length of the sequences and then make an exhaustive comparison. Just find a way to match is a hard work, there are many possibilities, but the most convenient are needed. For this, an additive model was developed, a points-accumulation model, valuing the matches of symbols, the model has been commonly called ``+1-1-2''.
 
 The dynamic programming algorithms essentially divides a large problem (e.g. the full sequence) into a series of smaller problems and uses the optimal solutions to the smaller problems to reconstruct an optimal solution to the larger problem.
 
@@ -117,19 +116,19 @@ Finally, High-performance computing (HPC) is applied to speedup long-running sci
 
 \section{Parallel Dynamic Programming Architecture}
 
-An important aspect that we consider when implementing more than one dynamic programming parallelization approach is to be able to separate or decompose the solutions in different layers of processing. In particular, we have structured our solutions in 3 layers on processing:
+An important aspect that we consider when implementing more than one dynamic programming parallelization approach is to be able to separate or decompose the solutions into different layers of processing. In particular, we have structured our solutions in 3 layers on processing:
 
 \begin{enumerate}
     \item Cell filling logic: is the one at the lowest level and the one used to calculate each individual cell's value. In other words, the implementation of Bellman equation. When we execute the logic to fill a cell, it is a assumed that all required dependencies of this cell have been previously calculated.
-    \item Filling patterns: dynamic programming algorithms are usually characterized by filling the matrix(es) using different patterns or shapes. It is common to say: we are filling this matrix by subsquares o by diagonals. A filling pattern algorithm fills a group of cells following a certain order. Such an order should be compatible with each cell individual dependencies.
-    \item Matrix filling: this layer constitutes the high-level approach for filling the whole matrix. It is at this level where we decide how exactly the parallelization effort is implemented. We could decide, for example, to fill certain different shapes in parallel. Being $N \times N$ the dimensions of the dynamic programming matrix, at the simplest case, a matrix filling algorithm could be to fill the subsquare which has its upper-left corner at cell $(0,0)$ and has height and width equal to $N$. In this case, it turns out that the given subsquare is equal to the whole matrix, but it doesn't have to be the case. More elaborate matrix filling algorithms should make use of the filling primitives in the layer below. 
+    \item Filling patterns: dynamic programming algorithms are usually characterized by filling the matrix (or matrices) using different patterns or shapes. It is common to say: we are filling this matrix by subsquares o by diagonals. A filling pattern algorithm fills a group of cells following a certain order. Such an order should be compatible with each cell individual dependencies.
+    \item Matrix filling: this layer constitutes the high-level approach for filling the whole matrix. It is at this level where we decide how exactly the parallelization effort is implemented. We could decide, for example, to fill certain different shapes in parallel. Being $N \times N$ the dimensions of a dynamic programming matrix, at the simplest case, a matrix filling algorithm could be to fill the subsquare which has its upper-left corner at cell $(0,0)$ and has height and width equal to $N$. In this case, it turns out that the given subsquare is equal to the whole matrix, but it doesn't have to be the case. More elaborate matrix filling algorithms should make use of the filling primitives in the layer below. 
 \end{enumerate}
 
-The previously described software architecture facilitates the development of different versions of the same algorithm. We are decoupling the logic needed to satisfy Bellman equation at each individual cell (the lowest most layer), from the patterns for filling subparts of the matrix(the layer in the middle), from the high-level logic used to fill the whole matrix (which could involve parallel programming logic if desired). Changing the parallel programming strategy should not affect the logic in other layers, as they act as primitives for the layer above them.
+The previously described software architecture facilitates the development of different versions of the same algorithm. We are decoupling the logic needed to satisfy Bellman equation at each individual cell (the lowest most layer), from the patterns for filling subparts of the matrix (the layer in the middle), from the high-level logic used to fill the whole matrix (which could involve parallel programming logic if desired). Changing the parallel programming strategy should not affect the logic in other layers, as they act as primitives for the layer above them.
 
 It should be also noted that the idea behind this layering, is in fact to expose parallelism in dynamic programming applications. By having different groups of cells that could be filled independently, and by having filling pattern primitives that could be applied to each one of them, we are greatly simplifying the writing process of dynamic programming parallel programs.
 
-We will describe how each of these layers plays a role in our implementations. A prototype that makes use of these concepts can be found at \url{https://github.com/diepe28/Proyecto2-BMC-Alineamientos}.
+We will describe how each of these layers plays a role in our implementation. A prototype that makes use of these concepts can be found at \url{https://github.com/diepe28/Proyecto2-BMC-Alineamientos}.
 
 \subsection{Cell filling logic layer}
 
@@ -192,7 +191,7 @@ void fill_similarity_matrix_full(Cell*** matrix, char* seq1, char* seq2, int seq
 }
 \end{lstlisting}
 
-That was kind of simple. But for our parallel implementations we will have more complex schemes at this particular layer. And that's what we will describe in the following sections.
+That was kind of simple. But for our parallel implementation we will have more complex schemes at this particular layer. And that's what we will describe in the following sections.
 
 \section{Chunk-based Solution}
 
@@ -202,13 +201,13 @@ We claim that Needleman-Wunsch and Smith-Waterman algorithms are \textbf{chunk-b
     \item An arbitrary chunk size $S = (n, m)$ could be chosen for the algorithm, where $n \geq 1 \land n \leq N$ and $m \geq 1 \land m \leq M$.
     \item If chunk size $S = (n, m)$ is chosen, then each chunk is a submatrix of $A$ composed of $n$ adjacent rows and $m$ adjacent columns of $A$. If $n$ is not divisible by $N$ or $m$ is not divisible by $M$ then some chunks will have sizes different to $S$. We will call these ``leftover'' chunks. For simplicity we will assume that $n$ is divisible by $N$ and $m$ is divisible by $M$.
     \item There are no cells shared between chunks.
-    \item A chunk is said to be filled if all its cells are calculated.
+    \item A chunk is said to be filled if all its cells have been already calculated.
     \item A chunk could have at most 8 adjacent chunks (some of which could depend on). Assuming the set of directions relative to a chunk are: $D = \{ N, W, E, S, NW, NE, SW, SE \}$, the set of chunk dependencies directions $C_D$ is a subset of $D$.
     \item The chunk dependencies directions should be always the same for any chosen chunk size.
     \item We also define the granularity of a chunk of size $S$ as $G(S) = \frac{n+m}{2}$.
 \end{itemize}
 
-The previous definitions tell us intuitively, that Bellman Equation for a (\textbf{chunk-based}) algorithm defines $C_D$, and conceptually, chunks are thought as having $S = (1, 1)$.
+The previous definitions tell us intuitively, that Bellman Equation for a (\textbf{chunk-based}) algorithm defines $C_D$, and conceptually, chunks are thought as having $S = (1, 1)$ (chunks are individual cells).
 
 For our studied algorithms we have that $C_D = \{N, NW, W\}$. Each chunk depends at most of three other chunks: the one located to the north, the one located at the north-west and the one located to the west. To fill a chunk we need to be certain that its dependent chunks have been previously filled.
 
@@ -216,14 +215,14 @@ For our studied algorithms we have that $C_D = \{N, NW, W\}$. Each chunk depends
 
 Next, we will detail how we distribute the work in our Chunk-based Solution among the different processing units (which are threads in our case, but this could be generalized). In particular, we wish that the algorithm will scale to the number of provided threads of execution. Our solution guarantees that each thread will have an equal amount of work and each one remains idle approximately the same amount of time.
 
-Our solution is designed to receive as an input $T$ (the number of threads of execution that will be used). Then we perform automatically the workload distribution among the threads in a way we consider appropriate. We use the following algorithm for distributing the work given a dynamic programming matrix $M$ with dimensions $N \times M$:
+Our solution is designed to receive as an input $T$ (the number of threads of execution that will be used). Then we perform automatically the workload distribution among the threads in a way we consider appropriate. We use the following algorithm for distributing the work given a dynamic programming matrix $A$ with dimensions $N \times M$:
 
 \begin{enumerate}
     \item We choose chunk size width $m = M / T$ \footnote{We will assume that both $m$ and $n$ are integer numbers. Extending the algorithm for handling leftover chunks is not difficult but it is outside the scope of this paper.}.
     \item We choose chunk size height $n = N / (2 * T)$.
     \item We divide the dynamic programming matrix in $2T$ equal strips. A strip is an horizontal concatenation of chunks that goes from column $0$ to column $M - 1$. That is, one strip spans all matrix columns.
     \item Strips are all labeled with a number. We will denote these $S_0, S_1, \cdots, S_{2T}$.
-    \item For each thread $t$, $0 \leq t \leq T-1$, assign the strips $S_t$ and $S_{t + T}$ to be filled by $t$. Given this, it means that each thread will be responsible of filling two strips which are $T-1$ strips apart. Thread $t$ will first fill strip $S_t$ from left to right (chunk by chunk), and then will jump to fill strip $S_{t + T}$. See figure \ref{exec}. There is no particular reason of choosing two strips per thread other than reducing the percentage of idle time for each thread (this will be explained later). We don't provide any specific formula, but we claim that more strips could be assigned to each thread as the number of computer cores goes up. Two is a good number for the average desktop computer (4 to 8 cores).  
+    \item For each thread $t_i$, $0 \leq i \leq T-1$, assign the strips $S_i$ and $S_{i + T}$ to be filled by $t_i$. Given this, it means that each thread will be responsible of filling two strips which are $T-1$ strips apart. Thread $t_i$ will first fill strip $S_i$ from left to right (chunk by chunk), and then will jump to fill strip $S_{i + T}$. See figure \ref{exec}. There is no particular reason of choosing two strips per thread other than reducing the percentage of idle time for each thread (this will be explained later). We don't provide any specific formula, but we claim that more strips could be assigned to each thread as the number of computer cores goes up.
     \item We can think of each strip $S_k$ as a set of chunks. That is $S_k = \{ C_{k, 0}, C_{k, 1}, C_{k,2}, \cdots, C_{k,T-1}\}$. 
 \end{enumerate}
 
@@ -231,11 +230,11 @@ Our solution is designed to receive as an input $T$ (the number of threads of ex
   \begin{center}
     \includegraphics[scale=0.55]{Images/workload.PNG}
   \end{center}
-  \caption{An example of a work load distribution for 4 threads according to our solution. Chunks of the same color are assigned to the same thread. In this case, each strip is composed of four chunks.}
+  \caption{An example of a workload distribution for 4 threads according to our solution. Chunks of the same color are assigned to the same thread. In this case, each strip is composed of four chunks.}
   \label{exec}
 \end{figure}
 
-To achieve significant speedup the number of threads $t$ should be chosen carefully. In one extreme, if we choose to use a lot of threads, then chunk granularity will be really small. There will be higher parallelism, but too much synchronization overhead (see section below). In the other extreme, if we choose a small number of threads then we will have a big chunk granularity that will result in a smaller degree of parallelism, but synchronization overhead will be small. Experimental results suggests that choosing $T$ to be equal to the number of processor cores in the machine might be the best option. 
+To achieve significant speedup the number of threads $T$ should be chosen carefully. In one extreme, if we choose to use a lot of threads, then chunk granularity will be really small. There will be higher parallelism, but too much synchronization overhead (see section below). In the other extreme, if we choose a small number of threads then we will have a big chunk granularity that will result in a smaller degree of parallelism, but synchronization overhead will be small. Experimental results suggests that choosing $T$ to be equal to the number of processor cores in the machine might be the best option. A similar distribution of work via strips was proposed in \cite{martins2001multithreaded}.
 
 \subsection{Matrix Filling Strategy}
 
@@ -264,21 +263,15 @@ All semaphores are initialized with their values set to 0. Every thread, except 
 
 Following the previous scheme it is guaranteed that a chunk, before being filled, will always have its chunk dependencies calculated. Suppose we are in phase $P_i$ of the algorithm. A thread waits for a semaphore notification before filling a chunk $c$, which indicates that the chunk located to the north $c_N$ has been filled. Chunk $c$ also depends on the chunk located to the west $c_W$ and the one located to the north-west $c_{NW}$. Given that threads fill chunks inside a strip in west to east sense, then it can be safely assumed that the chunk located to the west of $c$ has been already been filled in phase $P_{i-1}$, and the same to the chunk located to the west of $c_{N}$ which is in fact $c_{NW}$. 
 
-See Figure for an example of how the algorithm progresses among phases.
+See Figure \ref{exec_2} for an example of how the algorithm progresses among phases.
 
 \begin{figure}[h]
   \begin{center}
     \includegraphics[scale=0.44]{Images/chunks_matrix_2.PNG}
   \end{center}
   \caption{An example of how the algorithm progresses among phases. Each image illustrates the chunks that have being already calculated at the end of each phase, along with the semaphore notifications between processors.}
-  \label{exec}
+  \label{exec_2}
 \end{figure}
-
-\section{Other Proposed Solutions}
-
-% Diego.
-
-% Don't know if we are gonna have implementations on time.
 
 \section{Proposed Experiments}
 
@@ -306,7 +299,7 @@ In the case of our experiments we are going to have 3 factors:
 
 \begin{itemize}
     \item Number of Threads: This factor is the number of threads that are going to be executed concurrently. This factor will have 8 different levels, from 1 thread to 8 threads, since this is our maximum hardware capacity .
-    \item Sequences: These are the input for the algorithm itsef, we are going to have 2 pairs of DNA sequences, the first pair is the first chromosome of a Macaca monkey versus the first chromosome of a Gorilla, which consists of 8.632 base pairs and 7.655 base pairs respectively. For the other Sequence pair we are going to use a sequence of amino-acids of Myosin-4 (Myosin is a family of proteins which are involved in the muscle contraction) of Trichinella Sp (a parasite)  with 1966 amino-acids and the Myosin-3 (a different class of the same protein family) of the same parasite with 1970 amino-acids \footnote{For this experiments the result of the aligned sequences is not what matters to us, but the execution time of the algoritms}.
+    \item Sequences: These are the input for the algorithm itself, we are going to have 2 pairs of DNA sequences, the first pair is the first chromosome of a Macaca monkey versus the first chromosome of a Gorilla, which consists of 8.632 base pairs and 7.655 base pairs respectively. For the other Sequence pair we are going to use a sequence of amino-acids of Myosin-4 (Myosin is a family of proteins which are involved in the muscle contraction) of Trichinella Sp (a parasite)  with 1966 amino-acids and the Myosin-3 (a different class of the same protein family) of the same parasite with 1970 amino-acids \footnote{For this experiments the result of the aligned sequences is not what matters to us, but the execution time of the algorithms}.
     \item Algorithm: This variable describes the algorithm that is going to be used with our approach, this factor is going to have 2 levels: SW (Smith-Waterman) algorithm and NW (Needleman-Wunsch) algorithm. 
 \end{itemize}
 
@@ -346,7 +339,7 @@ The results we expect that will happen by running our experiments would be that 
 
 \subsection{Preliminary Results}
 
-In this sub-section we present the result of the experiments just described. In figure \ref{fig:Macaca_VS_Gorilla_NW} we see the speedup obtained with our chunk-based paralelization approach of the Needleman-Wunsch algoritm, when comparing the first chromosome of a Macaca Mulata Monkey, of 8632 base pairs, against the first chromosome of a Gorilla, of 7665 base pairs; we ran the algoritm using from 1 to 8 cores (threads) and we replicate the experiment 5 times in order to obtain mean values. 
+In this sub-section we present the result of the experiments just described. In figure \ref{fig:Macaca_VS_Gorilla_NW} we see the speedup obtained with our chunk-based parallelization approach of the Needleman-Wunsch algorithm, when comparing the first chromosome of a Macaca Mulata Monkey, of 8632 base pairs, against the first chromosome of a Gorilla, of 7665 base pairs; we ran the algorithm using from 1 to 8 cores (threads) and we replicate the experiment 5 times in order to obtain mean values. 
 
 \begin{figure}[h]
   \begin{center}
@@ -356,7 +349,7 @@ In this sub-section we present the result of the experiments just described. In 
   \label{fig:Macaca_VS_Gorilla_NW}
 \end{figure}
 
-It is interesting to observe that even though the results for all executions of the parallel algoritm are better than the original approach, the best result is obtained when using just 2 cores; in that case we obtain a speedup of about 1.6.    
+It is interesting to observe that even though the results for all executions of the parallel algorithm are better than the original approach, the best result is obtained when using just 2 cores; in that case we obtain a speedup of about 1.6.    
 
 \begin{figure}[h]
   \begin{center}
@@ -366,7 +359,7 @@ It is interesting to observe that even though the results for all executions of 
   \label{fig:Macaca_VS_Gorilla_SW}
 \end{figure}
 
-In figure \ref{fig:Macaca_VS_Gorilla_SW} we present the speedup obtained aligning the same two sequences of the last case, but instead of performing a global alignment we apply a local alignment using the Smith-Waterman algoritm. In this case we have a more expected result, where as the numer of cores is increased so is the speedup; sadly the best result in this scenario is a very low speedup of about 1.1. \\
+In figure \ref{fig:Macaca_VS_Gorilla_SW} we present the speedup obtained aligning the same two sequences of the last case, but instead of performing a global alignment we apply a local alignment using the Smith-Waterman algorithm. In this case we have a more expected result, where as the number of cores is increased so is the speedup; sadly the best result in this scenario is a very low speedup of about 1.1. \\
 
 The next two images correspond to a different experiment. In this next case what we align is not DNA but protein sequences, wich are given in amino acids instead of nitrogenous bases. The sequences aligned are two classes of the same family of proteins called Myosin, which are involved in the muscular contraction needed for movement. They are proteins of the same organism, called Trichiniella Spiralis, a parasite. Respectively the Myosin-4 has 1966 amino acids and the Myosin-3 has 1970 amino acids. The image \ref{fig:Myosin3_VS_Myosin4_NW} shows the speedup obtained when globally aligning the sequences. 
 
@@ -388,15 +381,15 @@ It is here we we get the best results overall. When using 6 cores with our chunk
   \label{fig:Myosin3_VS_Myosin4_SW}
 \end{figure}
 
-The image \ref{fig:Myosin3_VS_Myosin4_SW} shows the speedup values when aligning the same two sequences of protein using the Smith-Waterman algoritm. Here, as in the last SW case as the cores are increased so is the speedup, but it still yields a vey low value of about 1.1. \\
+The image \ref{fig:Myosin3_VS_Myosin4_SW} shows the speedup values when aligning the same two sequences of protein using the Smith-Waterman algorithm. Here, as in the last SW case as the cores are increased so is the speedup, but it still yields a very low value of about 1.1. \\
 
-In none of the results just presented we were able to obtain a considerable improvement using our chunk-based approach. Nevertheless in all results the paralell algoritm was indeed faster than the original sequential algoritm, so we think our efforts have not been in vain. 
+Even though the results of the experiments did not produced the performance improvements we were hoping, in all comparisons of the parallel algorithm vs the original sequential algorithm, the former was faster. We believe that exploiting parallelism in other parts of the method or using different ways for synchronizing the threads could yield better results.
 
 \section{Related Work}
 
 There have been previous researches with the development of parallel processing of Biological Sequence, this researches are about comparison of the algorithms. In \cite{edmiston1988parallel} the comparison is based in sequences that provides insight into molecular structure function, and homology, and it is increasingly important as the available data bases become larger and more numerous.
 
-There are also forms of generation parallel programs from the Wavefront Desing Pattern, this forms allowed to reduce the complexity of sequential programming, \cite{anvik2001generating} describe a pattern-based parallel programming system that generates parallel programs from parallel design patterns.
+There are also forms of generation parallel programs from the Wavefront Design Pattern, this forms allowed to reduce the complexity of sequential programming, \cite{anvik2001generating} describe a pattern-based parallel programming system that generates parallel programs from parallel design patterns.
 
 In previous research using a general-purpose graphics processing unit, have helped develop accelerated version of the popular NCI-Blast like GPU-Blast, the speedup of this solution is range mostly between 3 and 4 \cite{hughey1996parallel}.
 
@@ -409,25 +402,21 @@ An implementation of the Smith-Waterman sequence-alignment algorithm using Singl
 
 \section{Future Work}
 
-As future work we propose implementing other approaches and running the same experiment as us, to be able to compare statistically our result with others approaches. 
+As future work we propose implementing other approaches and running the same experiment as we did, to be able to compare statistically our results. One of this other approaches, that has not escapes our mind, is trying different ways of synchronization in our chunk-based solution. Currently, the thread management is mainly done via semaphores. Another option would be to use a \textit{yield}-like solution. Meaning that a thread relinquish its CPU time directly, without having the semaphores as intermediary. For that there are multiple c primitives to aid the programmer in such circumstances such as: \textit{pthread\_yield} or \textit{sched\_yield} that causes the calling thread to relinquish the CPU to another thread; also we could use something such as \textit{sleep} which makes sure that the calling thread will not run on the CPU for a given amount of time. 
 
-Also replicating our experiments with other DNA, RNA or protein strands to confirm our results. 
+A question that immediately pops in our head is determining the right time to yield the processor? Is it when there is no more work to do? Or should it be better to give up the CPU when a certain percentage of work has been completed? and therefore trying to buy time for dependent tasks to finish; we think that comparing this kind of strategies could, at the end, improve the algorithm's performance. 
+
+Replicating our experiments with other DNA, RNA or protein strands to double check our results. 
 
 There is also other researches that can be performed about parallelizing other parts of the algorithms such as the step for island searching in the Smith Waterman algorithm.
 
+
 \section{Conclusions}
 
-Our work indicates that is possible to obtain speedup on dynamic programming algorithms via parallel programming, even when there are clear dependencies among tasks. It is necessary to design an algorithm which tries to distribute work equally among threads and that has as little synchronization overhead as possible.
+Our work indicates that is possible to obtain speedup on dynamic programming algorithms via parallel programming, even when there are clear dependencies among tasks. It is necessary to design an algorithm which tries to distribute work equally among threads and that has as little synchronization overhead as possible. Classifying different dynamic programming algorithms as chunk-based has helped us to develop our parallelization strategy. Both Needleman-Wunsch and Smith-Waterman algorithms fall into this category and both are relevant in the field of bioinformatics.
 
 Preliminary results seem to suggest that tuning of the algorithm is required to achieve higher speedups. We think that assigning more strips to the threads (not just two) might improve the speedup measures, as that would reduce the threads idle times. 
 
-% Olger y Diego.
-
-% Preliminary results support our hypothesis that parallelizing dynamic programming algorithms might be worthy and could be a preferably approach to running heuristic algorithms (like BLAST).
-
-% Synchronization strategies should be chosen carefully? When are semaphores better than spin locks?
-
-% Any other significant conclusion. CPU utilization does not imply a good speedup. 
 
 \ifCLASSOPTIONcaptionsoff
   \newpage
