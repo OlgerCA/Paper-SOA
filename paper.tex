@@ -90,9 +90,23 @@ This paper is organized in the following way: The section 2 explains the backgro
 
 Since the molecular biology began, it has been necessary to develop sequence alignment methods, the development of these methods has taken many years and it's not as simple as matching the length of the sequences and then make an exhaustive comparison. Just find a way to match is a hard work, there are many possibilities, but the most convenient are needed. For this, an additive model was developed, a points-accumulation model, valuing the matches of symbols, the model has been commonly called ``+1-1-2''.
 
-The dynamic programming algorithms essentially divides a large problem (e.g. the full sequence) into a series of smaller problems and uses the optimal solutions to the smaller problems to reconstruct an optimal solution to the larger problem.
+The dynamic programming algorithms essentially divides a large problem (e.g. the full sequence) into a series of smaller problems and uses the optimal solutions to the smaller problems to reconstruct an optimal solution to the larger problem. This is known as the ``Principle of Optimallity'' \cite{rbellman1957}.
 
-In 1970, Saul B. Needleman y Christian D. Wunsch published \cite{needleman1970align}, a method for global sequence alignment with dynamic programming (one table), and in 1981, Temple F. Smith y Michael S. Waterman published \cite{smith1981align}, a method for local alignment of sequences consisting of a Needleman-Wunsch variant method. However, these methods did not have mechanisms for compaction of the sequences.
+A Bellman Equation describes the policy that the algorithm should use to make an optimal decision from the smaller sub-optimal decisions \cite{rbellman1957}.
+
+In 1970, Saul B. Needleman y Christian D. Wunsch published \cite{needleman1970align}, a method for global sequence alignment with dynamic programming (one table), and in 1981, Temple F. Smith y Michael S. Waterman published \cite{smith1981align}, a method for local alignment of sequences consisting of a Needleman-Wunsch variant method. However, these methods did not have mechanisms for compaction of the sequences. The bellman equation used by the Needleman-Wunsch algorithm is:
+
+\begin{center}
+    $H_{i,j} = max(H_{i-1,j-1} + M, H_{i-1,j} + GP, H_{i,j-1} + GP $ \cite{needleman1970align}
+\end{center}
+
+Where M is the gain of a match in the sequence and GP is the penalty of a gap, which can vary depending on the scheme used \cite{needleman1970align}. Similarly the Bellman Equation for the Smith-Waterman algorithm is:
+
+\begin{center}
+    $H_{i,j} = max(0, H_{i-1,j-1} + M, H_{i-1,j} + GP, H_{i,j-1} + GP) $ \cite{smith1981align}
+\end{center}
+
+It is different in that the minimum value that is going to be used is a 0, no negative values are allowed, since when $H_{i-1,j-1} + M$ and $H_{i-1,j} + GP$ and $H_{i,j-1} + GP$ are negative, the 0 will be the max value.
 
 With semi-global alignment techniques this lack was satisfied, leaving the gaps penalization. In general, the technique was useful for aligning long sequences with short sequences and to find similar fragments.
 
@@ -113,6 +127,7 @@ The amino-acid substitution matrices are tables with scores for all possible pai
 The BLOSUM (BLOcks of Amino Acid SUbstitution Matrix) matrices are another alternative, these are used to assess sequence alignments of evolutionarily divergent proteins. Are used in local alignments, introduced in 1992 in \cite{henikoff1992align} by Henikoff and Henikoff.
 
 Finally, High-performance computing (HPC) is applied to speedup long-running scientific applications, for instance the simulation of computational fluid dynamics (CFD), or in sequence alignment algorithms. Today's supercomputers often base on commodity processors, but also have different facets: from clusters over (large) shared-memory systems to accelerators (e.g. GPUs). Leveraging these systems, parallel computing with e.g. MPI, OpenMP or CUDA must be applied.
+
 
 \section{Parallel Dynamic Programming Architecture}
 
@@ -402,7 +417,7 @@ An implementation of the Smith-Waterman sequence-alignment algorithm using Singl
 
 \section{Future Work}
 
-As future work we propose implementing other approaches and running the same experiment as we did, to be able to compare statistically our results. One of this other approaches, that has not escapes our mind, is trying different ways of synchronization in our chunk-based solution. Currently, the thread management is mainly done via semaphores. Another option would be to use a \textit{yield}-like solution. Meaning that a thread relinquish its CPU time directly, without having the semaphores as intermediary. For that there are multiple c primitives to aid the programmer in such circumstances such as: \textit{pthread\_yield} or \textit{sched\_yield} that causes the calling thread to relinquish the CPU to another thread; also we could use something such as \textit{sleep} which makes sure that the calling thread will not run on the CPU for a given amount of time. 
+As future work we propose implementing other approaches and running the same experiment as we did, to be able to compare statistically our results. One of this other approaches, that has not escaped our mind, is trying different ways of synchronization in our chunk-based solution. Currently, the thread management is mainly done via semaphores. Another option would be to use a \textit{yield}-like solution. Meaning that a thread relinquish its CPU time directly, without having the semaphores as intermediary. For that there are multiple c primitives to aid the programmer in such circumstances such as: \textit{pthread\_yield} or \textit{sched\_yield} that causes the calling thread to relinquish the CPU to another thread; also we could use something such as \textit{sleep} which makes sure that the calling thread will not run on the CPU for a given amount of time. 
 
 A question that immediately pops in our head is determining the right time to yield the processor? Is it when there is no more work to do? Or should it be better to give up the CPU when a certain percentage of work has been completed? and therefore trying to buy time for dependent tasks to finish; we think that comparing this kind of strategies could, at the end, improve the algorithm's performance. 
 
